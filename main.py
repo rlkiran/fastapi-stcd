@@ -2,10 +2,17 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from services.qa_service import get_answer, preload_models  # Import preload function
+from contextlib import asynccontextmanager
+from services.qa_service import get_answer, preload_models
 
-# FastAPI app definition with lifespan event handler
-app = FastAPI(lifespan=preload_models)
+# Wrapper function for lifespan to use the async context manager properly
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    async with preload_models(app):
+        yield
+
+# FastAPI app definition with proper lifespan handler
+app = FastAPI(lifespan=lifespan)
 
 # Pydantic model for incoming request
 class QuestionRequest(BaseModel):
